@@ -50,7 +50,7 @@ I built this simply because Windows Defender took way too long for my severely d
 
 3. **Configure Safe Directories**
 
-  Add directories (one per line) in safe_dir.txt that you trust and want to skip during scanning.
+   Add directories (one per line) in **safe_dir.txt** (create it inside the **src** folder ) that you trust and want to skip during scanning.
 
 4. **Run the Scanner**
 
@@ -62,7 +62,7 @@ I built this simply because Windows Defender took way too long for my severely d
  
    - Note: If the program cannot connect to the VirusTotal API when running in full mode, it will automatically fall back to quick scan mode and notify you.
 
-5. **To scan the **entire system drive**: (fs = full system, get it?)**
+5. **To scan the **entire system drive**: (fs = full system, I use neovim btw)**
    ```bash
    python main.py fs
    ```
