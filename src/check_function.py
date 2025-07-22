@@ -124,6 +124,7 @@ def is_secretly_exe(file_path) -> bool:
         return False
 
 
+# make it more simple ig - to complicated and error prone
 def is_signed(file_path):
     try:
         result = subprocess.run(
