@@ -7,6 +7,7 @@ import check_function
 
 import requests
 
+
 def can_make_api_call():
     # Step 1: Check internet connectivity quickly
     try:
@@ -23,7 +24,9 @@ def can_make_api_call():
         if response.status_code in {200, 401, 403, 404}:
             return True
         else:
-            print(f"VirusTotal API returned unexpected status code: {response.status_code}")
+            print(
+                f"VirusTotal API returned unexpected status code: {response.status_code}"
+            )
             return False
     except requests.RequestException:
         print("Failed to reach VirusTotal API.")
@@ -46,7 +49,9 @@ def list_suspicious_files(base_path):
                     print(f"Skipping safe file: {file_path}")
                     continue
 
-                futures.append(executor.submit(check_function.local_suspicious_check, root, file))
+                futures.append(
+                    executor.submit(check_function.local_suspicious_check, root, file)
+                )
 
         for future in futures:
             result = future.result()
@@ -55,6 +60,7 @@ def list_suspicious_files(base_path):
             elif result and result.startswith("[!]"):
                 print(result)
     return suspicious_files
+
 
 def query_virustotal_for_files(files):
     flagged = []
@@ -65,8 +71,9 @@ def query_virustotal_for_files(files):
         flagged.append(f"[VT] {vt_analysis}: {file_path}")
     return flagged
 
+
 def main():
-    if len(sys.argv) < 2 or len(sys.argv) > 3:
+    if not (len(sys.argv) == 3 or len(sys.argv) == 2):
         print("Usage: python main.py <directory_path> [--quick/-q | --full/-f]")
         sys.exit(1)
 
@@ -98,7 +105,9 @@ def main():
     # Check VirusTotal API connectivity if full scan requested
     if not quick_scan:
         if not can_make_api_call():
-            print("Warning: Cannot connect to VirusTotal API, switching to quick scan mode.")
+            print(
+                "Warning: Cannot connect to VirusTotal API, switching to quick scan mode."
+            )
             quick_scan = True
 
     start_time = time.time()
@@ -126,7 +135,9 @@ def main():
         print(f"\nScan completed in {elapsed:.2f} seconds.")
         return
 
-    print(f"\nStep 2: Querying VirusTotal API for {len(suspicious_files)} suspicious files...\n")
+    print(
+        f"\nStep 2: Querying VirusTotal API for {len(suspicious_files)} suspicious files...\n"
+    )
     flagged_files = query_virustotal_for_files(suspicious_files)
 
     for line in flagged_files:
@@ -136,6 +147,7 @@ def main():
 
     elapsed = time.time() - start_time
     print(f"\nScan completed in {elapsed:.2f} seconds.")
+
 
 if __name__ == "__main__":
     main()

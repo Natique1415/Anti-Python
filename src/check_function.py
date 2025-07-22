@@ -18,12 +18,28 @@ CACHE_FILE = os.path.join(CACHE_DIR, "vt_cache.json")
 LAST_SCAN_FILE = os.path.join(CACHE_DIR, "last_scan.json")
 SAFE_DIR_FILE = "safe_dir.txt"
 
-API_RATE_LIMIT_PER_MIN = 4  
+API_RATE_LIMIT_PER_MIN = 4
 API_INTERVAL = 60 / API_RATE_LIMIT_PER_MIN
 
 SUSPICIOUS_EXTENSIONS = {
-    '.exe', '.bat', '.cmd', '.scr', '.pif', '.vbs', '.js', '.jse', '.wsf',
-    '.ps1', '.msi', '.reg', '.dll', '.hta', '.com', '.cpl', '.lnk', '.iso'
+    ".exe",
+    ".bat",
+    ".cmd",
+    ".scr",
+    ".pif",
+    ".vbs",
+    ".js",
+    ".jse",
+    ".wsf",
+    ".ps1",
+    ".msi",
+    ".reg",
+    ".dll",
+    ".hta",
+    ".com",
+    ".cpl",
+    ".lnk",
+    ".iso",
 }
 
 MIN_FILE_SIZE = 1024  # bytes
@@ -41,85 +57,97 @@ if os.path.exists(LAST_SCAN_FILE):
 else:
     last_scan = {"last_scan_time": 0}
 
+
 def save_cache():
     with open(CACHE_FILE, "w") as f:
         json.dump(vt_cache, f, indent=2)
+
 
 def save_last_scan_time(timestamp):
     with open(LAST_SCAN_FILE, "w") as f:
         json.dump({"last_scan_time": timestamp}, f)
 
-def load_safe_dirs():
+
+def load_safe_dirs() -> list[str]:
     if not os.path.exists(SAFE_DIR_FILE):
         # create empty file
         with open(SAFE_DIR_FILE, "w") as f:
             pass
         return []
+
     with open(SAFE_DIR_FILE, "r") as f:
-        lines = [line.strip() for line in f.readlines()]
+        lines = [line.strip() for line in f]
+
     safe_dirs = [os.path.abspath(line).lower() for line in lines if line]
     return safe_dirs
 
+
 SAFE_DIRS = load_safe_dirs()
 
-def is_path_safe(path):
+
+def is_path_safe(path) -> bool:
     """Returns True if path is inside any safe directory"""
     path = os.path.abspath(path).lower()
     for safe_dir in SAFE_DIRS:
-        safe_dir_check = safe_dir if safe_dir.endswith(os.sep) else safe_dir + os.sep
-        path_check = path if path.endswith(os.sep) else path + os.sep
+        safe_dir_check = safe_dir if safe_dir.endswith("\\") else safe_dir + "\\"
+        path_check = path if path.endswith("\\") else path + "\\"
         if path_check.startswith(safe_dir_check):
             return True
     return False
 
-def is_disguised_executable(file_name):
+
+def is_disguised_executable(file_name) -> bool:
     parts = file_name.lower().split(".")
     if len(parts) >= 3:
-        last_ext = '.' + parts[-1]
-        if last_ext in SUSPICIOUS_EXTENSIONS:
+        if f".{parts[-1]}" in SUSPICIOUS_EXTENSIONS:
             return True
     return False
 
-def is_multi_extension_suspicious(file_name):
-    pattern = r'.+\.(txt|pdf|doc|docx|xls|xlsx|ppt|pptx|jpg|jpeg|png|gif)\.(exe|bat|cmd|scr|pif|vbs|js|ps1)$'
-    return re.match(pattern, file_name.lower()) is not None
 
-def is_suspicious_extension(file_name):
-    _, ext = os.path.splitext(file_name.lower())
-    return ext in SUSPICIOUS_EXTENSIONS
+def is_suspicious_extension(file_name) -> bool:
+    return f'.{file_name.lower().split(".")[-1]}' in SUSPICIOUS_EXTENSIONS
 
-def is_small_file(file_path):
+
+def is_small_file(file_path) -> bool:
     try:
         return os.path.getsize(file_path) < MIN_FILE_SIZE
     except OSError:
         return False
 
-def has_exe_magic(file_path):
+
+# Checks if the file starts with the 'MZ' header, which indicates a Windows executable (EXE) format.
+def is_secretly_exe(file_path) -> bool:
     try:
-        with open(file_path, 'rb') as f:
-            magic = f.read(2)
-            return magic == b'MZ'
+        with open(file_path, "rb") as f:
+            return f.read(2) == b"MZ"
     except Exception:
         return False
+
 
 def is_signed(file_path):
     try:
         result = subprocess.run(
-            ["powershell", "-Command", f"Get-AuthenticodeSignature -FilePath '{file_path}' | Select-Object -ExpandProperty Status"],
+            [
+                "powershell",
+                "-Command",
+                f"Get-AuthenticodeSignature -FilePath '{file_path}' | Select-Object -ExpandProperty Status",
+            ],
             capture_output=True,
-            text=True
+            text=True,
         )
         status = result.stdout.strip()
         return status == "Valid"
     except Exception:
         return False
 
+
 def get_file_hash(file_path):
     sha256_hash = hashlib.sha256()
-    with open(file_path,"rb") as f:
-        for byte_block in iter(lambda: f.read(4096),b""):
+    with open(file_path, "rb") as f:
+        for byte_block in iter(lambda: f.read(4096), b""):
             sha256_hash.update(byte_block)
     return sha256_hash.hexdigest()
+
 
 def query_virustotal(file_hash):
     if file_hash in vt_cache:
@@ -144,6 +172,7 @@ def query_virustotal(file_hash):
         time.sleep(API_INTERVAL)
         return None
 
+
 def analyze_virustotal_response(data):
     if not data:
         return "Unknown on VirusTotal"
@@ -156,12 +185,14 @@ def analyze_virustotal_response(data):
     else:
         return "Clean on VirusTotal"
 
+
 def is_file_modified_since(file_path, timestamp):
     try:
         mtime = os.path.getmtime(file_path)
         return mtime > timestamp
     except Exception:
         return True  # If in doubt, scan
+
 
 def local_suspicious_check(root, file):
     full_path = os.path.abspath(os.path.join(root, file))
@@ -174,11 +205,7 @@ def local_suspicious_check(root, file):
     if not is_file_modified_since(full_path, last_scan.get("last_scan_time", 0)):
         return None
 
-    suspicious_name = (
-        is_disguised_executable(file)
-        or is_multi_extension_suspicious(file)
-        or is_suspicious_extension(file)
-    )
+    suspicious_name = is_disguised_executable(file) or is_suspicious_extension(file)
     if not suspicious_name:
         return None
 
@@ -189,9 +216,11 @@ def local_suspicious_check(root, file):
             return None
 
     _, ext = os.path.splitext(file.lower())
-    if ext == '.exe' or is_disguised_executable(file) or is_multi_extension_suspicious(file):
-        if not has_exe_magic(full_path):
-            return f"[!] File pretending to be exe without proper magic bytes: {full_path}"
+    if ext == ".exe" or is_disguised_executable(file):
+        if not is_secretly_exe(full_path):
+            return (
+                f"[!] File pretending to be exe without proper magic bytes: {full_path}"
+            )
 
     # Return full path for VirusTotal check if unsigned suspicious file
     if not is_signed(full_path):
