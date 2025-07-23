@@ -21,6 +21,9 @@ SAFE_DIR_FILE = "safe_dir.txt"
 API_RATE_LIMIT_PER_MIN = 4
 API_INTERVAL = 60 / API_RATE_LIMIT_PER_MIN
 
+MIN_FILE_SIZE = 1024  # bytes
+BUF_SIZE = 4096  # You can adjust the buffer size
+
 SUSPICIOUS_EXTENSIONS = {
     ".exe",
     ".bat",
@@ -42,7 +45,6 @@ SUSPICIOUS_EXTENSIONS = {
     ".iso",
 }
 
-MIN_FILE_SIZE = 1024  # bytes
 
 # Load or initialize caches
 if os.path.exists(CACHE_FILE):
@@ -143,11 +145,14 @@ def is_signed(file_path):
 
 
 def get_file_hash(file_path):
-    sha256_hash = hashlib.sha256()
+    hash_algorithm = hashlib.sha256()
     with open(file_path, "rb") as f:
-        for byte_block in iter(lambda: f.read(4096), b""):
-            sha256_hash.update(byte_block)
-    return sha256_hash.hexdigest()
+        while True:
+            data = f.read(BUF_SIZE)
+            if not data:
+                break
+            hash_algorithm.update(data)
+    return hash_algorithm.hexdigest()
 
 
 def query_virustotal(file_hash):
