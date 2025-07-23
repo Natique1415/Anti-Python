@@ -125,7 +125,7 @@ def is_secretly_exe(file_path) -> bool:
         return False
 
 
-# make it more simple ig - to complicated and error prone
+# works for now, false positives a lot from what I see
 def is_signed(file_path):
     try:
         result = subprocess.run(
@@ -136,9 +136,9 @@ def is_signed(file_path):
             ],
             capture_output=True,
             text=True,
+            check=True,
         )
-        status = result.stdout.strip()
-        return status == "Valid"
+        return result.stdout.strip() == "Valid"
     except Exception:
         return False
 
