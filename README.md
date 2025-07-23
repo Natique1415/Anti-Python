@@ -57,6 +57,7 @@ I built this simply because Windows Defender took way too long for my severely d
    ```bash
    python main.py <directory_path> [--quick/-q | --full/-f]
    ```
+   - For the directory_path, use the **absolute path**. I haven't tested it for relative path yet. 
    - ``--quick`` or ``-q`` Run a quick scan using only local heuristics (no VirusTotal API calls).
    - ``-full`` or ``-f``: Run a full scan including VirusTotal API checks (this is the default if no option is provided).
  
