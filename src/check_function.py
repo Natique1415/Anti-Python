@@ -21,8 +21,7 @@ SAFE_DIR_FILE = "safe_dir.txt"
 API_RATE_LIMIT_PER_MIN = 4
 API_INTERVAL = 60 / API_RATE_LIMIT_PER_MIN
 
-MIN_FILE_SIZE = 1024  # bytes
-BUF_SIZE = 4096  # You can adjust the buffer size
+MIN_FILE_SIZE = 1024
 
 SUSPICIOUS_EXTENSIONS = {
     ".exe",
@@ -144,15 +143,10 @@ def is_signed(file_path):
         return False
 
 
+# requires Python 3.11+
 def get_file_hash(file_path):
-    hash_algorithm = hashlib.sha256()
     with open(file_path, "rb") as f:
-        while True:
-            data = f.read(BUF_SIZE)
-            if not data:
-                break
-            hash_algorithm.update(data)
-    return hash_algorithm.hexdigest()
+        return hashlib.file_digest(f, "sha256").hexdigest()
 
 
 def query_virustotal(file_hash):
